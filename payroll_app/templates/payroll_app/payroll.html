@@ -1,0 +1,452 @@
+{% extends 'payroll_app/base.html' %}
+{% load static %}
+
+{% block css %}
+<style>
+    th, td {
+        border: none;
+    }
+
+    td, label {
+        font-size: 15px;
+    }
+
+    tr {
+        vertical-align: middle;
+    }
+
+    .opt {
+        margin-left: -12px;
+    }
+
+    h5 {
+        font-weight: 500;
+    }
+
+    .dashboard-panel {
+        height: 475px;
+        position: sticky;
+        top: 75px; /* navbar-height */
+    }
+
+    .dropdown-toggle {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dropdown-toggle::after {
+        display: inline-block;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%); 
+    }
+
+    #duplicate-message:hover {
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        updateButtonText();
+        updateAnalytics();
+        updatePayslips(); 
+
+        function updateButtonText() {
+            var selectedOptions = $('.select-employee:checked').map(function() {
+                return $(this).val();
+            }).get();
+            var buttonText = selectedOptions.length > 0 ? selectedOptions.join(", ") : "Payroll for";
+            $('#dropdownMenuButton').text(buttonText);
+        }
+
+        function updateAnalytics() {
+            var all_time = $('#all-time').is(':checked');
+            var month = $('#month-analytics option:selected').val();
+            var year = $('#year-analytics option:selected').val();
+
+            if (! all_time) {
+                if (month == "Month" || year == "Year") {
+                    $('#payslip-count').text(`---`);
+                    $('#total-gross-pay').text(`---`);
+                    $('#total-deductions').text(`---`);
+                    $('#total-net-pay').text(`---`);
+
+                    return;
+                }
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: "{% url 'get_analytics' %}",
+                data: {
+                    'all_time': all_time,
+                    'month': month,
+                    'year': year,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(data) {
+                    $('#payslip-count').text(`${ data.length }`);
+
+                    if (data.length == 0)
+                    {
+                        $('#total-gross-pay').text(`0`);
+                        $('#total-deductions').text(`0`);
+                        $('#total-net-pay').text(`0`);
+                    }
+
+                    else {
+                        $('#total-gross-pay').text(`${ data.total_gross_pay }`);
+                        $('#total-deductions').text(`${ data.total_deductions }`);
+                        $('#total-net-pay').text(`${ data.total_net_pay }`);
+                    }
+                },
+                error: function(error) {
+                    console.error('Error error errorrrrr', error);
+                }
+            });
+        }
+
+        function updatePayslips() {
+            var all_time = $('#all-time').is(':checked');
+            var month = $('#month-analytics option:selected').val();
+            var year = $('#year-analytics option:selected').val();
+
+            if (! all_time) {
+                if (month == "Month" || year == "Year") {
+                    var tableBody = $("#payslip-table tbody");
+                    tableBody.empty();
+                    
+                    return;
+                }
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: "{% url 'get_payslips' %}",
+                data: {
+                    'all_time': all_time,
+                    'month': month,
+                    'year': year,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(data) {
+                    var tableBody = $("#payslip-table tbody");
+                    var tempBody = [];
+
+                    for (let i = 0; i < data.pk.length; i++) {
+                        var tableRow = `<tr>
+                            <td> ${ data.id_number[i] } </td>
+                            <td> ${ data.date_range[i] } </td>
+                            <td> ${ data.cycle[i] } </td>
+                            <td> ${ parseFloat(data.total_pay[i]).toFixed(2) } </td>
+                            <td> 
+                                <a href='/view_payslip/${ data.pk[i] }' class="btn opt"> 
+                                    <img src="{% static '/images/view.png' %}" width="21" height="21"> 
+                                </a>
+                                <a href='/delete_payslip/${ data.pk[i] }'class="btn"> 
+                                    <img src="{% static '/images/delete.png' %}" width="21" height="20"> 
+                                </a>
+                            </td>
+                        </tr>`;
+
+                        tempBody.push(tableRow);
+                    }
+
+                    tableBody.empty();
+                    tableBody.append(tempBody);
+                },
+                error: function(error) {
+                    console.error('Error error errorrrrr', error);
+                }
+            });
+        }
+
+        $('.select-all').click(function() {
+            $('.select-employee').prop('checked', $(this).is(':checked'));
+            updateButtonText();
+        });
+
+        $('.select-employee').click(function(event) {
+            event.stopPropagation();
+
+            var allSelected = $('.select-employee:checked').length === $('.select-employee').length;
+            $('.select-all').prop('checked', allSelected);
+            updateButtonText();
+        });
+
+        $('#payslip-form').submit(function(event) {
+            event.preventDefault();
+
+            var id_numbers = [];
+            $(".select-employee:checked").each(function() {
+                id_numbers.push($(this).val());
+            });
+            var month = $('#month option:selected').val();
+            var year = $('#year option:selected').val();
+            var cycle = $('#cycle option:selected').val();
+
+            if (month == "Month" || year == "Year" || cycle == "Cycle") {
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: "{% url 'payroll' %}",
+                traditional: true,
+                data: {
+                    'id_numbers': id_numbers,
+                    'month': month,
+                    'year': year,
+                    'cycle': cycle,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(data) {
+                    for (let i = 0; i < data.pk.length; i++) {
+                        var pk = data.pk[i];
+                        var id_number = data.id_number[i];
+                        var date_range = data.date_range[i];
+                        var net_pay = parseFloat(data.net_pay[i]).toFixed(2);
+
+                        $('#payslip-table tbody').prepend(
+                            `<tr>
+                                <td> ${ id_number } </td>
+                                <td> ${ date_range } </td>
+                                <td> ${ cycle } </td>
+                                <td> ${ net_pay } </td>
+                                <td> 
+                                    <a href="/view_payslip/${ pk }" class="btn opt"> 
+                                        <img src="{% static '/images/view.png' %}" width="21" height="21"> 
+                                    </a>
+                                    <a href="/delete_payslip/${ pk }" class="btn" > 
+                                        <img src="{% static '/images/delete.png' %}" width="21" height="20"> 
+                                    </a>
+                                </td>
+                            </tr>`
+                        );
+                    }
+
+                    var duplicate_count = parseInt(data.duplicate_count);
+                    console.log(duplicate_count);
+
+                    if (duplicate_count == 0) {
+                        $('#duplicate-message').text(``); 
+                    } 
+                    else if (duplicate_count == 1) {
+                        $('#duplicate-message').text(`Ignored ${ duplicate_count } payslip that already exists`); 
+                    } 
+                    else if (duplicate_count > 1) {
+                        $('#duplicate-message').text(`Ignored ${ duplicate_count } payslips that already exist`); 
+                    }
+
+                    $("#month option:first").prop("selected", true);
+                    $("#year option:first").prop("selected", true);
+                    $("#cycle option:first").prop("selected", true);
+
+                    $('.select-all').prop('checked', false);
+                    $('.select-employee').prop('checked', false);
+                    updateButtonText();
+                    updateAnalytics();
+                },
+                error: function(error) {
+                    console.error('Error creating payslips:', error);
+                }
+            });
+        });
+
+        $('#all-time').change(function() {
+            if ($(this).is(':checked')) {
+                $('#month-analytics, #year-analytics').prop('disabled', true);
+            } else {
+                $('#month-analytics, #year-analytics').prop('disabled', false);
+            }
+
+            updateAnalytics();
+            updatePayslips();
+        });
+
+        $('#month-analytics').change(function() {
+            updateAnalytics();
+            updatePayslips();
+        });
+
+        $('#year-analytics').change(function() {
+            updateAnalytics();
+            updatePayslips();
+        });
+
+        $('#duplicate-message').on('click', function() {
+            $(this).text('');
+        });
+    });
+
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap">
+    <div class="col-md-8">
+        <div class="card p-3 mb-3 shadow-sm">
+            <div class="row p-2">
+                <h5> Payroll Creation </h5>
+            </div>
+            <div class="row p-2">
+                <form method="POST" id="payslip-form">
+                    {% csrf_token %}
+                    <div class="dropdown" name="id_numbers">
+                        <button class="btn btn-sm border dropdown-toggle w-100 text-start" type="button" id="dropdownMenuButton" 
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                            Payroll for:
+                        </button>
+                        <div class="dropdown-menu w-100" aria-labelledby="dropdownMenuButton">
+                            <label class="dropdown-item">
+                                <input type="checkbox" class="select-all"> All Items
+                            </label>
+
+                            <div class="dropdown-divider"></div>
+
+                            {% for e in employees %}
+                            <label class="dropdown-item">
+                                <input type="checkbox" class="select-employee" value="{{ e.id_number }}"> {{ e.id_number }} - {{ e.name }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="row pt-3">
+                        <div class="form-group col-md-4" id="month">
+                            <select class="form-control form-control-sm">
+                                <option selected> Month </option>
+                                <option> January </option>  <option> February </option>  <option> March </option>
+                                <option> April </option>    <option> May </option>       <option> June </option>
+                                <option> July </option>     <option> August </option>    <option> September </option>
+                                <option> October </option>  <option> November </option>  <option> December </option>
+                            </select>
+                        </div>
+        
+                        <div class="form-group col-md-4">
+                            <select class="form-control form-control-sm" id="year">
+                                <option selected> Year </option>
+                                <option> 2010 </option>  <option> 2011 </option>  <option> 2012 </option>
+                                <option> 2013 </option>  <option> 2014 </option>  <option> 2015 </option>
+                                <option> 2016 </option>  <option> 2017 </option>  <option> 2018 </option>
+                                <option> 2019 </option>  <option> 2020 </option>  <option> 2021 </option>
+                                <option> 2022 </option>  <option> 2023 </option>  <option> 2024 </option>
+                            </select>
+                        </div>
+        
+                        <div class="form-group col-md-4">
+                            <select class="form-control form-control-sm" id="cycle">
+                                <option selected> Cycle </option>
+                                <option> 1 </option>
+                                <option> 2 </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <button type="submit" class="btn btn-primary"> Create </button>
+                        <span class="text-danger" id="duplicate-message"> </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-12 card p-3 shadow-sm">
+            <div class="row p-2">
+                <h5> Payslips Summary </h5>
+            </div>
+
+            <div class="row p-2 pt-0 pb-4">
+                <div class="col-md-4 pe-2">
+                    <select class="form-control form-control-sm" id="month-analytics" disabled>
+                        <option selected> Month </option>
+                        <option> January </option>  <option> February </option>  <option> March     </option>
+                        <option> April   </option>  <option> May      </option>  <option> June      </option>
+                        <option> July    </option>  <option> August   </option>  <option> September </option>
+                        <option> October </option>  <option> November </option>  <option> December  </option>
+                    </select>
+                </div>
+                <div class="col-md-4 pe-2">
+                    <select class="form-control form-control-sm" id="year-analytics" disabled>
+                        <option selected> Year </option>
+                        <option> 2010 </option>  <option> 2011 </option>  <option> 2012 </option>
+                        <option> 2013 </option>  <option> 2014 </option>  <option> 2015 </option>
+                        <option> 2016 </option>  <option> 2017 </option>  <option> 2018 </option>
+                        <option> 2019 </option>  <option> 2020 </option>  <option> 2021 </option>
+                        <option> 2022 </option>  <option> 2023 </option>  <option> 2024 </option>
+                    </select>
+                </div>
+                <div class="col-md-4 form-check form-switch d-flex justify-content-end">
+                    <input class="form-check-input me-2" type="checkbox" id="all-time" name="all-time" checked>
+                    <label class="form-check-label pe-2" for="all-time"> All Time </label>
+                </div>
+            </div>
+
+            <table id="payslip-table" class="table table-hover">
+                <thead>
+                    <tr>
+                        <th class="col-2"> ID Number </th>
+                        <th class="col-4"> Date </th>  
+                        <th class="col-2"> Cycle </th>
+                        <th class="col-2"> Total Pay </th>  
+                        <th class="col-2"> Options </th>  
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in payslips %}
+                    <tr>
+                        <td> {{ p.id_number }} </td>
+                        <td> {{ p.date_range }} </td>
+                        <td> {{ p.cycle }} </td>
+                        <td> {{ p.total_pay }} </td>
+                        <td> 
+                            <a href="{% url 'view_payslip' pk=p.pk %}" class="btn opt"> 
+                                <img src="{% static '/images/view.png' %}" width="21" height="21"> 
+                            </a>
+                            <a href="{% url 'delete_payslip' pk=p.pk %}" class="btn"> 
+                                <img src="{% static '/images/delete.png' %}" width="21" height="20"> 
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-md-4"> <!---- try g-3 -->
+        <div class="card ms-3 p-3 shadow-sm dashboard-panel">
+            <div class="row p-2 pb-0">
+                <h5> Analytics </h5>
+            </div>
+            <div class="row p-2 pb-4 d-flex flex-wrap">
+                <div class="col-6">
+                    <h2> {{ employees | length }} </h2>
+                    <h6> Employees</h6>
+                </div>
+                <div class="col-6">
+                    <h2 id="payslip-count"> 0 </h2>
+                    <h6> Payslips </h6>
+                </div>
+            </div>	
+
+            <div class="row p-2 pb-4">
+                <h3> ₱ <span id="total-gross-pay"> </span> </h3>
+                <h6> Total Employee Payout </h6>
+            </div>
+
+            <div class="row p-2 pb-4">
+                <h3> ₱ <span id="total-deductions"> </span> </h3>
+                <h6> Total Deductions </h6>
+            </div>
+
+            <div class="row p-2">
+                <h3> ₱ <span id="total-net-pay"> </span> </h3>
+                <h6> Net Payroll </h6>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

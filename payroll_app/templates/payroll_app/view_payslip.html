@@ -1,0 +1,122 @@
+{% extends 'payroll_app/base.html' %}
+{% load static %}
+
+{% block css %}
+<style>
+    p {
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+</style>
+
+<script>
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row pb-5 mt-5">
+    <h5> Employee Details </h5>
+    <div class="d-flex flex-wrap">
+        <div class="col-md-6">
+            <span style="display:inline-block; min-width: 10ch;"> Name </span>
+            <span style="display:inline-block; min-width: 2ch;"> : </span>
+            <span> {{ payslip.employee.name }} </span>
+        </div>
+        <div class="col-md-6">
+            <span style="display:inline-block; min-width: 10ch;"> Pay Period </span>
+            <span style="display:inline-block; min-width: 2ch;"> : </span>
+            <span> {{ payslip.date_range }} </span>
+        </div>
+        <div class="col-md-6">
+            <span style="display:inline-block; min-width: 10ch;"> ID Number </span>
+            <span style="display:inline-block; min-width: 2ch;"> : </span>
+            <span> {{ payslip.id_number }} </span>
+        </div>
+        <div class="col-md-6">
+            <span style="display:inline-block; min-width: 10ch;"> Payslip ID </span>
+            <span style="display:inline-block; min-width: 2ch;"> : </span>
+            <span> {{ payslip.pk }} </span>
+        </div>
+    </div>
+</div>
+
+<div class="row pb-5">
+    <h5> Income Details </h5>
+    <div class="card-group">
+        <div class="card">
+            <div class="card-body d-flex flex-wrap">
+                <div class="col-md-6">
+                    <h5 class="card-title"> Earnings </h5>
+                    <p> Cycle Rate </p>
+                    <p> Allowances </p>
+                    <p> Overtime </p>
+                </div>
+                <div class="col-md-6" style="text-align: right;">
+                    <h5 class="title">Amount</h5>
+                    <p> {{ payslip.cycle_rate | floatformat:"2" }} </p>
+                    <p> {{ payslip.allowance | floatformat:"2" }} </p>
+                    <p> {{ payslip.overtime_pay | floatformat:"2" }} </p>
+                </div>
+            </div>
+            <div class="card-footer d-flex flex-wrap">
+                <div class="col-md-6">
+                    <p> Gross Pay </p>
+                </div>
+                <div class="col-md-6" style="text-align: right;">
+                    <p> PHP {{ payslip.gross_pay | floatformat:"2" }} </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body d-flex flex-wrap">
+                <div class="col-md-6">
+                    <h5 class="card-title"> Deductions: </h5> 
+                    {% if payslip.pay_cycle == 1 %}  
+                        <p> Pag-ibig </p>
+                    {% else %}
+                        <p> PhilHealth </p>
+                        <p> SSS </p>
+                    {% endif %}
+                    <p> Tax </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h5 class="title">Amount</h5>
+                    {% if payslip.pay_cycle == 1 %}  
+                        <p> {{ payslip.pag_ibig | floatformat:"2" }} </p>
+                    {% else %}
+                        <p> {{ payslip.philhealth | floatformat:"2" }} </p>
+                        <p> {{ payslip.sss | floatformat:"2" }} </p>
+                    {% endif %}
+                    <p> {{ payslip.tax | floatformat:"2" }} </p>
+                </div>
+            </div>
+            <div class="card-footer d-flex flex-wrap">
+                <div class="col-md-6">
+                    <p> Total Deductions </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p> PHP {{ payslip.total_deductions | floatformat:"2" }} </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row pb-5">
+    <div class="card-group">
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h5><b> Net Pay: </b></h5>
+                <p> ( Gross Pay - Total Deductions ) </p>
+            </div>
+        </div>
+        <div class="card bg-light border-0">
+            <div class="card-body" style="text-align: right;">
+                <h5><b> PHP {{ payslip.total_pay | floatformat:"2" }} </b></h5>
+                <p> {{ payslip.total_pay_desc }} Pesos Only </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

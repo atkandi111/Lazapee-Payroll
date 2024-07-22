@@ -1,0 +1,79 @@
+{% load static %}
+
+<html>
+    <head>
+        <title> Lazapee Payroll </title>
+        <link rel="stylesheet" href="{% static '/bootstrap/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static '/bootstrap/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static '/bootstrap/css/custom.css' %}">
+
+        <script src="{% static '/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+        <script src="{% static '/jquery/jquery-3.6.0.min' %}"></script>
+        <!---<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>  --->
+
+        {% block css %}
+        {% endblock %}
+
+        <style>
+            .navbar {
+                z-index: 0;
+                height: 75px;
+                position: sticky;
+                top: 0;
+                background-color: white;
+            }
+
+            .navbar-brand {
+                width: 200px;
+                font-weight: bold;
+            }
+
+            .nav-link {
+                font-weight: 500;
+                width: 100px;
+                color: var(--bs-secondary);
+            }
+
+            .nav-link:hover {
+                color: black;
+            }
+
+            .container {
+                margin-bottom: 75px;
+            }
+
+            .footer {
+                position: fixed;
+                height: 35px;
+                bottom: 0;
+                color: black;
+            }
+        </style>
+        
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="container-fluid justify-content-start text-center">
+                <a class="navbar-brand" href="#">Lazapee Payroll</a>
+                <a class="nav-link" href="{% url 'view_employees' %}"> Employees </a>
+                <a class="nav-link" href="{% url 'payroll' %}"> Payroll </a>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-10" style="background-color: white;">
+                    {% block content %}
+                    {% endblock %}
+                </div>
+            </div>
+        </div>  
+        
+        <footer class="footer fixed-bottom bg-light d-flex align-items-center justify-content-center">
+            <h6> &copy; 2024 </h6>
+        </footer>
+
+        {% block scripts %}
+        {% endblock %}
+    </body>
+</html>
