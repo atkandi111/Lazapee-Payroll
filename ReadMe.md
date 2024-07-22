@@ -1,7 +1,7 @@
 # Django Payroll System
 
 ### Overview
-This is my final output for my Django course. The goal was to create a CRUD web app that has basic employee and payroll management functionalities with specific calculations for Tax, Benefits, and Pay cycles.
+This is my final output for my Django course. The goal was to create a CRUD web app that has basic employee and payroll management functionalities. It includes specific calculations for Tax, Benefits, and Pay cycles.
 
 ![][1]
 ![][2]
@@ -12,7 +12,7 @@ This is my final output for my Django course. The goal was to create a CRUD web 
 [3]: img/PayrollDemo3.png
 
 ### Built With
-JQuery was used to handle AJAX interactions between frontend HTML files and backend Django views, enabling user interaction without necessarily doing a full page reload.
+JQuery was used to handle AJAX interactions between frontend HTML files and backend Django views, enabling user interaction without necessarily doing a full page reload. Both jQuery and Bootstrap are included in the static directory
 
 <img src="img/django.png" alt="drawing" height="40" width="100"/>
 
